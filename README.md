@@ -58,7 +58,7 @@ Then enter the password.
 
 ## 6. Config replica on `replica1_database`
 ```sql
-change replication source to source_log_file='mysql-bin.000004', source_log_pos=370;
+change replication source to source_log_file='mysql-bin.000003', source_log_pos=157;
 ```
 
 ## 7. Start replication on replica
