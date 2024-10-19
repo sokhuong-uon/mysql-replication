@@ -148,7 +148,7 @@ create table user (id int, bio varchar(1000));
 use chat;
 show tables;
 ```
-Your should see both table:
+You should see both table:
 ```shell
 +----------------+
 | Tables_in_chat |
