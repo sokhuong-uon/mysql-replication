@@ -134,7 +134,7 @@ Source_SSL_Verify_Server_Cert: No
             Network_Namespace:
 1 row in set (0.00 sec)
 ```
-Please not if there's any error or else you can continue.
+Please note if there's any error or else you can continue.
 
 # Playing with replication
 ## 1. Create new table in `chat` database in `primary_database` server.
