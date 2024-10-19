@@ -1,0 +1,96 @@
+name: mysql_replication
+services:
+  traefik:
+    image: traefik:v3.0
+    container_name: replication_traefik
+    hostname: traefik
+    restart: unless-stopped
+    command:
+      - --global.checknewversion=true
+      - --global.sendanonymoususage=true
+      - --api.dashboard=true
+      - --api.insecure=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+    ports:
+      - 80:80
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - mysql_replication_network
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.traefik.rule=Host(`traefik.localhost`)
+      # Need to specify the service even when we used --api.dashboard=true
+      - traefik.http.routers.traefik.service=api@internal
+      - traefik.http.routers.traefik.entrypoints=web
+
+  primary_database:
+    build:
+      context: ./mysql
+    container_name: primary_database
+    hostname: primary_database
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_REPLICATION_USER: ${MYSQL_REPLICATION_USER}
+      MYSQL_REPLICATION_PASSWORD: ${MYSQL_REPLICATION_PASSWORD}
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --ssl-ca=/etc/mysql/certs/ca.pem
+      --ssl-cert=/etc/mysql/certs/server-cert.pem
+      --ssl-key=/etc/mysql/certs/server-key.pem
+    volumes:
+      - primary_database_data:/var/lib/mysql
+      - ./mysql/mysql-primary.cnf:/etc/my.cnf
+      - ./mysql/create-replica-user-on-primary.sh:/docker-entrypoint-initdb.d/create-replica-user-on-primary.sh
+      - ./mysql/certs:/etc/mysql/certs
+    networks:
+      - mysql_replication_network
+
+  replica1_database:
+    build:
+      context: ./mysql
+    container_name: replica1_database
+    hostname: replica1_database
+    restart: unless-stopped
+    environment:
+      PRIMARY_DATABASE_HOST: ${PRIMARY_DATABASE_HOST}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --ssl-ca=/etc/mysql/certs/ca.pem
+      --ssl-cert=/etc/mysql/certs/server-cert.pem
+      --ssl-key=/etc/mysql/certs/server-key.pem
+    volumes:
+      - replica1_database_data:/var/lib/mysql
+      - ./mysql/mysql-replica1.cnf:/etc/my.cnf
+      - ./mysql/certs:/etc/mysql/certs
+      - ./mysql/config-replica.sh:/config-replica.sh
+    networks:
+      - mysql_replication_network
+    entrypoint: ["/config-replica.sh"]  
+
+  nettools:
+    image: jonlabelle/network-tools
+    container_name: nettools
+    hostname: nettools
+    networks:
+      - mysql_replication_network
+    command: "sleep infinity"
+
+volumes:
+  primary_database_data:
+  replica1_database_data:
+
+networks:
+  mysql_replication_network:
+    driver: bridge
+    name: mysql_replication_network
