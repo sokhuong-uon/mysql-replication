@@ -43,7 +43,7 @@ mysql> show master status\G;
 Executed_Gtid_Set:
 1 row in set (0.00 sec)
 ```
-Please not the file name (in this case `mysql-bin.000003`) and position (in this case `157`).
+Please note the file name (in this case `mysql-bin.000003`) and position (in this case `157`).
 
 ## 4. Get into `replica1_database` container
 ```bash
