@@ -1,4 +1,4 @@
-# MySQL replication
+# MySQL replication for new database
 
 # How to get things running
 ## 1. Setup env
