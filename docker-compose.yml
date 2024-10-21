@@ -60,7 +60,6 @@ services:
     hostname: replica1_database
     restart: unless-stopped
     environment:
-      PRIMARY_DATABASE_HOST: ${PRIMARY_DATABASE_HOST}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
     command: >
@@ -73,18 +72,25 @@ services:
       - replica1_database_data:/var/lib/mysql
       - ./mysql/mysql-replica1.cnf:/etc/my.cnf
       - ./mysql/certs:/etc/mysql/certs
-      - ./mysql/config-replica.sh:/config-replica.sh
     networks:
       - mysql_replication_network
-    entrypoint: ["/config-replica.sh"]  
+    depends_on:
+      - primary_database
+    entrypoint: >
+      sh -c "
+      mkdir -p /var/log/mysql /var/lib/mysql
+      && chown -R mysql:mysql /var/log/mysql /var/lib/mysql
+      && chmod 755 /var/log/mysql
+      && exec /entrypoint.sh mysqld
+      "
 
-  nettools:
-    image: jonlabelle/network-tools
-    container_name: nettools
-    hostname: nettools
-    networks:
-      - mysql_replication_network
-    command: "sleep infinity"
+  # nettools:
+  #   image: jonlabelle/network-tools
+  #   container_name: nettools
+  #   hostname: nettools
+  #   networks:
+  #     - mysql_replication_network
+  #   command: "sleep infinity"
 
 volumes:
   primary_database_data:
